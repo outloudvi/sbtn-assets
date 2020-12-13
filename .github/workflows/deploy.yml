@@ -1,0 +1,37 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    if: "(!contains(github.event.commits[0].message, '[skip ci]')) && (!contains(github.event.commits[0].message, '[ci skip]'))"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      - name: Prepare for deploy
+        run: |
+          mkdir dist
+          cp -r assets dist
+          cp sounds.json dist
+          cp categories.json dist
+
+      - name: Install SSH Client 🔑
+        uses: webfactory/ssh-agent@v0.4.1
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_PRODUCTON_KEY }}
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@releases/v3
+        with:
+          SSH: true
+          BRANCH: gh-pages
+          FOLDER: dist
+          SINGLE_COMMIT: true
+          CLEAN: true
