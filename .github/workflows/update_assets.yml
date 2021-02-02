@@ -1,0 +1,40 @@
+name: Pull from UiBeam
+
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    # Update Thu 23:25 (CST) per week
+    - cron: "25 15 * * 4"
+
+jobs:
+  build:
+    if: "(contains(github.event_name, 'schedule') || contains(github.event.commits[0].message, '/update'))"
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      - name: Fetch and update
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          cd utils
+          pip install -r requirements.txt
+          python fetch.py
+
+      - name: Commit files
+        continue-on-error: true
+        run: |
+          git config --local user.email "bots+gha@outv.im"
+          git config --local user.name "GitHub Actions bot"
+          git add -A
+          git commit -m "feat: update $(date +%Y/%m/%d)"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
